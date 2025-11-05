@@ -1587,6 +1587,16 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
+            // Check if user is logged in
+    const currentUser = sessionStorage.getItem('currentUser');
+    const userName = sessionStorage.getItem('userName');
+    const userRole = sessionStorage.getItem('userRole');
+    
+    // Redirect to login if not authenticated
+    if (!currentUser) {
+        window.location.href = 'index.html';
+    }
+
         // Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyCa4XYpwePgiTWL30sSkIubYbWizTHwEQU",
