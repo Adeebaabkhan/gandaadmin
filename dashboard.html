@@ -1604,7 +1604,7 @@ const firebaseConfig = {
 
         // Check if user is logged in (simple session check)
         if (sessionStorage.getItem('salesTrackerLoggedIn') !== 'true') {
-            window.location.href = 'luv-amanita-index.html';
+            window.location.href = 'index.html';
         }
 
         // Get current user from session
@@ -2451,7 +2451,7 @@ const firebaseConfig = {
                 sessionStorage.removeItem('salesTrackerUser');
                 sessionStorage.removeItem('salesTrackerName');
                 sessionStorage.removeItem('salesTrackerRole');
-                window.location.href = 'luv-amanita-index.html';
+                window.location.href = 'index.html';
             }
         }
 
