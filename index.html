@@ -341,7 +341,7 @@
 
     <script>
         // =================== APP CONFIGURATION ===================
-        const APP_NAME = 'kirs'; // YOUR UNIQUE APP NAME - Each app gets its own isolated folder
+        const APP_NAME = 'abd'; // YOUR UNIQUE APP NAME - Each app gets its own isolated folder
 
         // =================== FIREBASE CONFIGURATION ===================
 const firebaseConfig = {
@@ -392,7 +392,7 @@ const firebaseConfig = {
 
         // Initialize default owner in Firebase
         function initializeDefaultUsers() {
-            getRef('users/kirs').once('value')
+            getRef('users/abd').once('value')
                 .then((snapshot) => {
                     if (!snapshot.exists()) {
                         // Create default owner account in Firebase INSIDE your app folder
@@ -405,11 +405,11 @@ const firebaseConfig = {
                             profitPercent: 100,
                             createdDate: new Date().toISOString().split('T')[0]
                         };
-                        return getRef('users/kirs').set(defaultOwner);
+                        return getRef('users/abd').set(defaultOwner);
                     }
                 })
                 .then(() => {
-                    console.log('✅ Default user initialized at: ' + APP_NAME + '/users/kirs');
+                    console.log('✅ Default user initialized at: ' + APP_NAME + '/users/abd');
                 })
                 .catch((error) => {
                     console.error('❌ Firebase initialization error:', error);
