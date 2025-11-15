@@ -2101,7 +2101,6 @@ body.dark-mode .profile-select-btn {
                 </select>
                 <button class="filter-btn active" id="filterAll">📊 All</button>
                 <button class="filter-btn" id="filterSold">✅ Sold</button>
-                <button class="filter-btn" id="filterStock">📦 In Stock</button>
                 <button class="btn-small btn-success" id="btnExport">📥 Export CSV</button>
                 <button class="btn-small btn-danger" id="btnClearAll">🗑️ Clear All</button>
             </div>
@@ -4698,25 +4697,6 @@ function deleteSale(id) {
         });
 }
 
-        // =================== TOGGLE SOLD STATUS ===================
-        function toggleSold(id) {
-            const sale = sales.find(s => s.id === id);
-            if (!sale) return;
-            
-            sale.sold = !sale.sold;
-            
-            const userKey = sale.userName.replace(/[.#$/[\]]/g, '_');
-            showSyncingIndicator();
-            getRef('sales/' + userKey + '/' + id).update({ sold: sale.sold })
-                .then(() => {
-                    showToast(sale.sold ? '✅ Marked as sold!' : '📦 Marked as in stock', 'success');
-                    autoCalculatePayouts();
-                })
-                .catch((error) => {
-                    showToast('❌ Error: ' + error.message, 'error');
-                });
-        }
-
         // =================== EDIT SALE ===================
         function editSale(id) {
             const sale = sales.find(s => s.id === id);
@@ -4883,39 +4863,25 @@ function deleteSale(id) {
             
             return filtered;
         }
+function calculateStats() {
+    const filtered = getFilteredSales();
+    
+    const stats = filtered.reduce((acc, s) => {
+        acc.totalSales += (s.totalPrice || 0);
+        acc.totalProducts += s.quantity;
+        acc.soldCount += s.quantity; // All items are sold
+        acc.totalCapital += ((s.buyPrice || 0) * s.quantity);
+        acc.totalProfit += ((s.price || 0) - (s.buyPrice || 0)) * s.quantity;
+        
+        return acc;
+    }, {
+        totalSales: 0,
+        totalCapital: 0,
+        totalProducts: 0,
+        soldCount: 0,
+        totalProfit: 0
+    });
 
-        function calculateStats() {
-            const filtered = getFilteredSales();
-            
-            // Calculate all metrics in a single pass for better performance
-            const stats = filtered.reduce((acc, s) => {
-                acc.totalSales += (s.totalPrice || 0);
-                acc.totalProducts += s.quantity;
-                
-                if (s.sold) {
-                    acc.soldCount += s.quantity;
-                    // Calculate total capital (buy prices) for sold items
-                    acc.totalCapital += ((s.buyPrice || 0) * s.quantity);
-                    // Calculate business profit (Sell Price - Buy Price) for sold items
-                    acc.totalProfit += ((s.price || 0) - (s.buyPrice || 0)) * s.quantity;
-                } else {
-                    acc.stockCount += s.quantity;
-                }
-                
-                return acc;
-            }, {
-                totalSales: 0,
-                totalCapital: 0,
-                totalProducts: 0,
-                soldCount: 0,
-                stockCount: 0,
-                totalProfit: 0
-            });
-            
-            // Calculate Total Salary using total profit bracket method
-            // IMPORTANT: This applies ONE bracket rate to the total profit (not per-item calculation)
-            // Formula: Total Salary = Total Profit × Bracket Rate (%)
-            // Example: If Total Profit = ₱4,000 and bracket rate is 20%, then Total Salary = ₱800
             const bracketRate = getCommissionRateForProfit(stats.totalProfit, currentSession.id);
             const totalSalary = (stats.totalProfit * bracketRate) / 100;
             
@@ -4928,7 +4894,6 @@ function deleteSale(id) {
             document.getElementById('totalCapital').textContent = '₱' + stats.totalCapital.toFixed(2);
             document.getElementById('totalProducts').textContent = stats.totalProducts;
             document.getElementById('soldCount').textContent = stats.soldCount;
-            document.getElementById('stockCount').textContent = stats.stockCount;
             document.getElementById('totalProfit').textContent = '₱' + stats.totalProfit.toFixed(2);
             document.getElementById('totalSalary').textContent = '₱' + totalSalary.toFixed(2);
             document.getElementById('avgSaleValue').textContent = '₱' + avgSaleValue.toFixed(2);
@@ -4959,12 +4924,10 @@ function deleteSale(id) {
                 );
             }
             
-            // Apply status filter
-            if (activeFilter === 'filterSold') {
-                filtered = filtered.filter(s => s.sold);
-            } else if (activeFilter === 'filterStock') {
-                filtered = filtered.filter(s => !s.sold);
-            }
+// Apply status filter
+if (activeFilter === 'filterSold') {
+    filtered = filtered.filter(s => s.sold);
+}
             
             if (filtered.length === 0) {
                 tbody.innerHTML = `
@@ -4984,7 +4947,7 @@ function deleteSale(id) {
             tbody.innerHTML = filtered.map(sale => {
                 const warrantyClass = sale.warranty === 'FW' ? 'fw' : 'nw';
                 const accountClass = sale.accountType === 'Solo' ? 'solo' : 'shared';
-                const soldIcon = sale.sold ? '✅' : '📦';
+                const soldIcon = '✅';
                 
                 // Format profile tracking columns
                 const accountId = sale.accountId || '-';
@@ -5010,8 +4973,7 @@ function deleteSale(id) {
                         <td>${sale.quantity}</td>
                         <td class="amount-cell">₱${sale.price.toFixed(2)}</td>
                         <td class="amount-cell">₱${sale.totalPrice.toFixed(2)}</td>
-                        <td><span class="sold-check" onclick="toggleSold(${sale.id})">${soldIcon}</span></td>
-                        <td>
+                        <td><span class="sold-check">✅</span></td>                        <td>
                             <button class="action-btn edit-btn" onclick="editSale(${sale.id})">✏️</button>
                             <button class="action-btn delete-btn" onclick="deleteSale(${sale.id})">🗑️</button>
                         </td>
@@ -5402,7 +5364,7 @@ function deleteSale(id) {
             document.getElementById('searchInput').addEventListener('input', renderSalesTable);
             document.getElementById('userFilter').addEventListener('change', updateUI);
             
-            const filterButtons = ['filterAll', 'filterSold', 'filterStock'];
+            const filterButtons = ['filterAll', 'filterSold'];
             filterButtons.forEach(btnId => {
                 const btn = document.getElementById(btnId);
                 if (btn) {
