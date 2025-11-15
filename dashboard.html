@@ -4668,23 +4668,27 @@ document.querySelectorAll('input[name="saleType"]').forEach(radio => {
                 });
         }
 
-        // =================== DELETE SALE ===================
-        function deleteSale(id) {
-            if (!confirm('Delete this sale?')) return;
-            
-            const sale = sales.find(s => s.id === id);
-            if (!sale) return;
-            
-            const userKey = sale.userName.replace(/[.#$/[\]]/g, '_');
-            getRef('sales/' + userKey + '/' + id).remove()
-                .then(() => {
-                    showToast('🗑️ Sale deleted', 'info');
-                    autoCalculatePayouts();
-                })
-                .catch((error) => {
-                    showToast('❌ Error: ' + error.message, 'error');
-                });
-        }
+function deleteSale(id) {
+    if (!confirm('Delete this sale?')) return;
+    
+    const sale = sales.find(s => s.id === id);
+    if (!sale) return;
+    
+    // FIX: Use the same method as when adding sales
+    const userKey = (sale.soldBy || currentSession.username).replace(/[.#$[\]]/g, '_');
+    
+    console.log('Deleting sale from path:', 'sales/' + userKey + '/' + id);
+    
+    getRef('sales/' + userKey + '/' + id).remove()
+        .then(() => {
+            showToast('🗑️ Sale deleted', 'info');
+            autoCalculatePayouts();
+        })
+        .catch((error) => {
+            console.error('Delete error:', error);
+            showToast('❌ Error: ' + error.message, 'error');
+        });
+}
 
         // =================== TOGGLE SOLD STATUS ===================
         function toggleSold(id) {
