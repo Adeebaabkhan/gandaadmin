@@ -4149,66 +4149,69 @@ document.querySelectorAll('input[name="saleType"]').forEach(radio => {
             document.getElementById('totalEarningsCard').style.display = 'block';
         }
 
-// Delete Product
-function deleteProduct(productId) {
-    // Get the product to check who created it
-    const productRef = getRef('products/' + productId);
+// Delete Sale (Fixed for bulk-added sales and admin sales)
+function deleteSale(saleId) {
+    const saleRef = getRef(`sales/${currentSession.id}/${saleId}`);
     
-    productRef.once('value').then((snapshot) => {
-        const product = snapshot.val();
-        if (!product) {
-            showToast('❌ Product not found', 'error');
+    saleRef.once('value').then((snapshot) => {
+        const sale = snapshot.val();
+        if (!sale) {
+            showToast('❌ Sale not found', 'error');
             return;
         }
 
-        const productCreatorId = product.userId;
+        const saleCreatorId = sale.userId;
+        const saleCreatorRole = sale.userRole;
         const currentUserId = currentSession.id;
         const currentUserRole = currentSession.role;
 
+        console.log('Sale creator:', saleCreatorId, saleCreatorRole);
+        console.log('Current user:', currentUserId, currentUserRole);
+
         // Check permissions
         let canDelete = false;
-        
+
         if (currentUserRole === 'owner') {
-            // Owner can delete ANY product (admin products and their own)
+            // Owner can delete ANY sale (their own, admin sales, user sales)
             canDelete = true;
         } 
         else if (currentUserRole === 'admin') {
-            // Admin can only delete their OWN products
-            canDelete = productCreatorId === currentUserId;
+            // Admin can delete their own sales AND other admin's sales
+            canDelete = (saleCreatorId === currentUserId) || (saleCreatorRole === 'admin');
         } 
         else {
-            // Users can only delete their OWN products
-            canDelete = productCreatorId === currentUserId;
+            // Users can only delete their OWN sales
+            canDelete = saleCreatorId === currentUserId;
         }
 
         if (!canDelete) {
-            showToast('❌ You can only delete your own products', 'error');
+            showToast('❌ You do not have permission to delete this sale', 'error');
             return;
         }
 
         // Ask for confirmation before deletion
-        if (!confirm('Are you sure you want to delete this product?')) return;
+        if (!confirm('Are you sure you want to delete this sale?')) return;
 
-        // Delete the product from Firebase
-        productRef.remove()
+        // Delete the sale from Firebase
+        saleRef.remove()
             .then(() => {
-                showToast('🗑️ Product deleted successfully', 'success');
+                showToast('🗑️ Sale deleted successfully', 'success');
                 
-                // Remove the product row from the UI
-                const productRow = document.getElementById('productRow-' + productId);
-                if (productRow) {
-                    productRow.remove();
+                // Remove the sale row from the UI
+                const saleRow = document.getElementById(`sale-${saleId}`);
+                if (saleRow) {
+                    saleRow.remove();
                 }
                 
-                // Refresh products list
-                loadProducts();
+                // Refresh sales table
+                updateUI();
             })
             .catch((error) => {
-                console.error('Error deleting product:', error);
-                showToast('❌ Error deleting product: ' + error.message, 'error');
+                console.error('Error deleting sale:', error);
+                showToast('❌ Error deleting sale: ' + error.message, 'error');
             });
     }).catch((error) => {
-        console.error('Error fetching product:', error);
+        console.error('Error fetching sale:', error);
         showToast('❌ Error: ' + error.message, 'error');
     });
 }
@@ -6400,6 +6403,8 @@ async function saveBulkSales() {
             id: Date.now() + index,
             userId: currentSession.id,
             userName: currentSession.customName,
+            userRole: currentSession.role,
+            createdBy: currentSession.id,
             product: selectedProduct.name,
             productId: selectedProduct.id,
             productName: selectedProduct.name,
